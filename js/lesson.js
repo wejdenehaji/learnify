@@ -1,244 +1,250 @@
-// Lesson page: shows the lesson chosen in the URL (?lesson=N, starting at 0),
-// switches lessons without reloading the page, and tracks lesson progress.
-(function () {
-  "use strict";
+/**
+ * Learnify - Lesson View Controller (Vanilla JS)
+ * Gère l'affichage dynamique des leçons, la navigation entre leçons sans rechargement,
+ * les marqueurs vidéo, le quiz interactif et la sauvegarde de position.
+ */
 
-  // 1. Make sure the course data exists and is usable.
-  if (
-    typeof LEARNIFY_COURSE === "undefined" ||
-    !Array.isArray(LEARNIFY_COURSE.lessons) ||
-    LEARNIFY_COURSE.lessons.length === 0
-  ) {
-    console.error("Learnify: course data is missing or empty.");
-    return;
-  }
-  var lessons = LEARNIFY_COURSE.lessons;
-  var currentIndex = 0;
+import { DataService } from './data.js';
+import { Storage } from './storage.js';
+import { ProgressTracker } from './progress.js';
+import { VideoPlayer } from './player.js';
+import { QuizEngine } from './quiz.js';
 
-  // Progress state: one true/false per lesson (true = completed).
-  // This is the single source of truth: every indicator is drawn from it.
-  var completed = lessons.map(function () { return false; });
+export const LessonController = {
+  currentCourse: null,
+  currentLessonIndex: 0,
 
-  // 2. Small helpers.
-  function setText(id, text) {
-    var element = document.getElementById(id);
-    if (element) {
-      element.textContent = text;
+  /**
+   * Initialise la page de leçon
+   * @param {string} courseId 
+   * @param {number} lessonIndex 
+   */
+  async init(courseId = 'html-css', lessonIndex = 0) {
+    const data = await DataService.getLesson(courseId, lessonIndex);
+    if (!data) {
+      console.warn(`Leçon non trouvée pour courseId=${courseId}, lessonIndex=${lessonIndex}`);
+      return;
     }
-  }
 
-  // Turns a lesson number from a string into a valid index, or null.
-  // Only whole numbers inside the lesson range are valid.
-  function parseLessonNumber(raw) {
-    if (raw === null || !/^\d+$/.test(raw) || Number(raw) >= lessons.length) {
-      return null;
+    this.currentCourse = data.course;
+    this.currentLessonIndex = data.index;
+
+    // Enregistrer la position pour la reprise automatique
+    Storage.setLastPosition(this.currentCourse.id, this.currentLessonIndex);
+
+    // Mettre à jour l'affichage
+    this.render();
+    this.bindEvents();
+  },
+
+  /**
+   * Met à jour le DOM avec le contenu de la leçon active
+   */
+  render() {
+    const course = this.currentCourse;
+    const lesson = course.lessons[this.currentLessonIndex];
+    const total = course.lessons.length;
+
+    // 1. Titre et métadonnées
+    document.title = `${lesson.title} — ${course.title} — Learnify`;
+
+    const breadcrumbLesson = document.getElementById('breadcrumb-lesson');
+    if (breadcrumbLesson) breadcrumbLesson.textContent = `Leçon ${this.currentLessonIndex + 1}`;
+
+    const breadcrumbCourse = document.querySelector('.breadcrumbs a[href*="course.html"]');
+    if (breadcrumbCourse) {
+      breadcrumbCourse.textContent = course.title;
+      breadcrumbCourse.href = `course.html?course=${course.id}`;
     }
-    return Number(raw);
-  }
 
-  // Reads ?lesson=N from the address bar. Returns { index, valid }.
-  function readLessonFromUrl() {
-    var raw = new URLSearchParams(window.location.search).get("lesson");
-    if (raw === null) {
-      return { index: 0, valid: true };
+    const eyebrow = document.querySelector('.lesson-page-heading .eyebrow');
+    if (eyebrow) eyebrow.textContent = course.eyebrow || course.title.toUpperCase();
+
+    const titleEl = document.getElementById('lesson-title');
+    if (titleEl) titleEl.textContent = lesson.title;
+
+    const subtitleEl = document.getElementById('lesson-subtitle');
+    if (subtitleEl) subtitleEl.textContent = `Leçon ${this.currentLessonIndex + 1} sur ${total} · ${lesson.duration}`;
+
+    // 2. Vidéo
+    const videoIframe = document.getElementById('lesson-video');
+    const videoFrame = document.querySelector('.video-frame');
+    if (videoIframe && lesson.videoUrl) {
+      videoIframe.src = lesson.videoUrl;
+      videoIframe.title = `Vidéo de la leçon : ${lesson.title}`;
     }
-    var index = parseLessonNumber(raw);
-    return index === null ? { index: 0, valid: false } : { index: index, valid: true };
-  }
 
-  // 2b. Progress.
-  function countCompleted() {
-    return completed.filter(Boolean).length;
-  }
-
-  function progressMessage(done, total) {
-    if (done === 0) {
-      return "Vous n'avez pas encore commencé. À vous de jouer !";
+    // Initialiser les marqueurs vidéo (Bonus 1)
+    if (videoFrame) {
+      VideoPlayer.init(videoFrame, lesson);
     }
-    if (done === total) {
-      return "Bravo, vous avez terminé le cours !";
+
+    // 3. Contenu texte et code
+    const headingEl = document.getElementById('article-heading');
+    if (headingEl) headingEl.textContent = lesson.articleHeading || lesson.title;
+
+    const descEl = document.getElementById('lesson-description');
+    if (descEl) descEl.textContent = lesson.description;
+
+    const tipEl = document.getElementById('lesson-tip');
+    if (tipEl) tipEl.textContent = lesson.tip;
+
+    const codeEl = document.getElementById('lesson-code');
+    if (codeEl) codeEl.textContent = lesson.codeSnippet || '// Aucun exemple pour cette leçon';
+
+    // 4. Navigation précédente / suivante (sans rechargement)
+    const prevBtn = document.getElementById('previous-lesson');
+    const nextBtn = document.getElementById('next-lesson');
+
+    if (prevBtn) {
+      if (this.currentLessonIndex > 0) {
+        prevBtn.style.visibility = 'visible';
+        prevBtn.href = `lesson.html?course=${course.id}&lesson=${this.currentLessonIndex - 1}`;
+        prevBtn.setAttribute('data-target-lesson', this.currentLessonIndex - 1);
+      } else {
+        prevBtn.style.visibility = 'hidden';
+      }
     }
-    var remaining = total - done;
-    return "Bon travail ! Encore " + remaining + (remaining > 1 ? " leçons" : " leçon") + " à terminer.";
-  }
 
-  // Redraws every progress indicator from the "completed" list.
-  function renderProgress() {
-    var total = lessons.length;
-    var done = countCompleted();
-    var percent = total > 0 ? Math.round((done / total) * 100) : 0;
+    if (nextBtn) {
+      if (this.currentLessonIndex < total - 1) {
+        nextBtn.style.visibility = 'visible';
+        nextBtn.href = `lesson.html?course=${course.id}&lesson=${this.currentLessonIndex + 1}`;
+        nextBtn.setAttribute('data-target-lesson', this.currentLessonIndex + 1);
+      } else {
+        nextBtn.style.visibility = 'hidden';
+      }
+    }
 
-    setText("lesson-progress-percent", percent + "%");
-    setText("sidebar-progress-text", done + " sur " + total + " terminées");
-    setText("progress-message", progressMessage(done, total));
+    // 5. Rendu de la liste latérale (checklist interactive)
+    const lessonListEl = document.getElementById('lesson-list');
+    const sidebarCount = document.querySelector('.lesson-sidebar .lesson-count');
+    if (sidebarCount) sidebarCount.textContent = total;
 
-    ["lesson-progress-fill", "sidebar-progress-fill"].forEach(function (id) {
-      var fill = document.getElementById(id);
-      if (fill) {
-        fill.style.width = percent + "%";
-        if (fill.parentElement) {
-          fill.parentElement.setAttribute("aria-valuenow", String(percent));
+    if (lessonListEl) {
+      lessonListEl.innerHTML = course.lessons.map((l, idx) => {
+        const isDone = Storage.isLessonCompleted(course.id, idx);
+        const isActive = idx === this.currentLessonIndex;
+        const num = String(idx + 1).padStart(2, '0');
+
+        return `
+          <a 
+            href="lesson.html?course=${course.id}&lesson=${idx}" 
+            data-lesson="${idx}" 
+            class="sidebar-lesson ${isActive ? 'active' : ''} ${isDone ? 'completed' : ''}"
+            role="button"
+            aria-current="${isActive ? 'true' : 'false'}"
+          >
+            <span class="sidebar-lesson-number">${num}</span>
+            <span>
+              <strong>${l.title}</strong>
+              <small>${l.duration}</small>
+            </span>
+            <i>${isDone ? '✓' : '▶'}</i>
+          </a>
+        `;
+      }).join('');
+    }
+
+    // 6. Rendu du Quiz interactif (Obligatoire 4)
+    let quizContainer = document.getElementById('lesson-quiz-container');
+    if (!quizContainer) {
+      quizContainer = document.createElement('div');
+      quizContainer.id = 'lesson-quiz-container';
+      const lessonContent = document.querySelector('.lesson-content');
+      if (lessonContent) {
+        const actions = lessonContent.querySelector('.lesson-actions');
+        lessonContent.insertBefore(quizContainer, actions);
+      }
+    }
+
+    QuizEngine.render(quizContainer, course, lesson, () => {
+      // Callback en cas de succès au quiz : rafraîchir l'état de progression
+      ProgressTracker.updateLessonPage(course, this.currentLessonIndex);
+    });
+
+    // 7. Mettre à jour l'ensemble des métriques de progression
+    ProgressTracker.updateLessonPage(course, this.currentLessonIndex);
+  },
+
+  /**
+   * Branche les interactions de la page
+   */
+  bindEvents() {
+    // Bouton "Marquer comme terminée"
+    const completeBtn = document.getElementById('complete-lesson');
+    if (completeBtn && !completeBtn.dataset.bound) {
+      completeBtn.dataset.bound = 'true';
+      completeBtn.addEventListener('click', () => {
+        if (!this.currentCourse) return;
+        Storage.toggleLessonCompleted(this.currentCourse.id, this.currentLessonIndex);
+        ProgressTracker.updateLessonPage(this.currentCourse, this.currentLessonIndex);
+      });
+    }
+
+    // Navigation entre leçons sans rechargement complet (SPA)
+    const prevBtn = document.getElementById('previous-lesson');
+    const nextBtn = document.getElementById('next-lesson');
+
+    const handleNavClick = (e, btn) => {
+      e.preventDefault();
+      const target = Number(btn.getAttribute('data-target-lesson'));
+      if (!isNaN(target)) {
+        this.goToLesson(target);
+      }
+    };
+
+    if (prevBtn && !prevBtn.dataset.bound) {
+      prevBtn.dataset.bound = 'true';
+      prevBtn.addEventListener('click', (e) => handleNavClick(e, prevBtn));
+    }
+
+    if (nextBtn && !nextBtn.dataset.bound) {
+      nextBtn.dataset.bound = 'true';
+      nextBtn.addEventListener('click', (e) => handleNavClick(e, nextBtn));
+    }
+
+    // Clic sur la liste latérale sans rechargement
+    const lessonListEl = document.getElementById('lesson-list');
+    if (lessonListEl && !lessonListEl.dataset.bound) {
+      lessonListEl.dataset.bound = 'true';
+      lessonListEl.addEventListener('click', (e) => {
+        const item = e.target.closest('.sidebar-lesson');
+        if (item) {
+          e.preventDefault();
+          const target = Number(item.getAttribute('data-lesson'));
+          if (!isNaN(target)) {
+            this.goToLesson(target);
+          }
         }
+      });
+    }
+
+    // Écouter les mises à jour globales de progression
+    window.addEventListener('learnify:progress-updated', () => {
+      if (this.currentCourse) {
+        ProgressTracker.updateLessonPage(this.currentCourse, this.currentLessonIndex);
       }
     });
+  },
 
-    // Sidebar: status icon and text of each lesson.
-    document.querySelectorAll("#lesson-list .sidebar-lesson").forEach(function (item) {
-      var index = Number(item.getAttribute("data-lesson"));
-      var isDone = completed[index] === true;
-      item.classList.toggle("completed", isDone);
-      var icon = item.querySelector("i");
-      if (icon) {
-        icon.textContent = isDone ? "✓" : "▶";
-      }
-      var small = item.querySelector("small");
-      if (small && lessons[index]) {
-        small.textContent = lessons[index].duration + " min" + (isDone ? " · terminée" : "");
-      }
-    });
+  /**
+   * Change de leçon dans la vue active sans recharger la page
+   * @param {number} newIndex 
+   */
+  goToLesson(newIndex) {
+    if (!this.currentCourse) return;
+    const total = this.currentCourse.lessons.length;
+    if (newIndex < 0 || newIndex >= total) return;
 
-    // Button of the current lesson.
-    var button = document.getElementById("complete-lesson");
-    if (button) {
-      var currentDone = completed[currentIndex] === true;
-      button.textContent = currentDone ? "✓ Leçon terminée (annuler)" : "Marquer comme terminée ✓";
-      button.classList.toggle("button-done", currentDone);
-      button.classList.toggle("button-primary", !currentDone);
-    }
+    this.currentLessonIndex = newIndex;
+    Storage.setLastPosition(this.currentCourse.id, this.currentLessonIndex);
+
+    // Mettre à jour l'URL avec History API
+    const newUrl = `lesson.html?course=${this.currentCourse.id}&lesson=${newIndex}`;
+    window.history.pushState({ courseId: this.currentCourse.id, lessonIndex: newIndex }, '', newUrl);
+
+    this.render();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
-
-  function toggleCurrentLesson() {
-    completed[currentIndex] = !completed[currentIndex];
-    renderProgress();
-  }
-
-  // 3. Fill the page with one lesson.
-  function renderLesson(index) {
-    var lesson = lessons[index];
-    var total = lessons.length;
-    currentIndex = index;
-
-    document.title = lesson.title + " — Learnify";
-    setText("breadcrumb-lesson", "Leçon " + (index + 1));
-    setText("lesson-title", lesson.title);
-    setText("lesson-subtitle", "Leçon " + (index + 1) + " sur " + total + " · " + lesson.category);
-    setText("article-heading", lesson.heading);
-    setText("lesson-description", lesson.description);
-    setText("lesson-tip", lesson.tip);
-    setText("lesson-code", lesson.code);
-
-    // Video: show the frame only when the lesson has a video.
-    var iframe = document.getElementById("lesson-video");
-    if (iframe && iframe.parentElement) {
-      if (lesson.video) {
-        if (iframe.getAttribute("src") !== lesson.video) {
-          iframe.setAttribute("src", lesson.video);
-        }
-        iframe.parentElement.hidden = false;
-      } else {
-        iframe.removeAttribute("src");
-        iframe.parentElement.hidden = true;
-      }
-    }
-
-    // Previous / next links.
-    var previous = document.getElementById("previous-lesson");
-    if (previous) {
-      if (index > 0) {
-        previous.setAttribute("href", "lesson.html?lesson=" + (index - 1));
-        previous.style.visibility = "visible";
-      } else {
-        previous.style.visibility = "hidden"; // also removes it from the Tab order
-      }
-    }
-    var next = document.getElementById("next-lesson");
-    if (next) {
-      if (index < total - 1) {
-        next.setAttribute("href", "lesson.html?lesson=" + (index + 1));
-        next.textContent = "Leçon suivante →";
-      } else {
-        next.setAttribute("href", "course.html");
-        next.textContent = "Retour au cours →";
-      }
-    }
-
-    // Sidebar: mark the current lesson.
-    var items = document.querySelectorAll("#lesson-list .sidebar-lesson");
-    items.forEach(function (item) {
-      var isCurrent = Number(item.getAttribute("data-lesson")) === index;
-      item.classList.toggle("active", isCurrent);
-      if (isCurrent) {
-        item.setAttribute("aria-current", "page");
-      } else {
-        item.removeAttribute("aria-current");
-      }
-    });
-
-    renderProgress();
-  }
-
-  // 4. Switch lesson without reloading: update the page and the address bar.
-  function goToLesson(index) {
-    renderLesson(index);
-    window.history.pushState(null, "", "lesson.html?lesson=" + index);
-
-    // Move keyboard focus to the new title so screen readers announce the change.
-    var heading = document.getElementById("lesson-title");
-    if (heading) {
-      heading.setAttribute("tabindex", "-1");
-      heading.focus();
-    }
-  }
-
-  // Which lesson does this link point to? null = not a lesson link of this page.
-  function lessonIndexOfLink(link) {
-    var url = new URL(link.href, window.location.href);
-    if (url.pathname !== window.location.pathname) {
-      return null;
-    }
-    return parseLessonNumber(url.searchParams.get("lesson"));
-  }
-
-  document.addEventListener("click", function (event) {
-    // Let the browser handle new-tab / new-window clicks normally.
-    if (event.defaultPrevented || event.button !== 0 ||
-        event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
-      return;
-    }
-    var link = event.target.closest ? event.target.closest("a") : null;
-    if (!link) {
-      return;
-    }
-    var isLessonNav = link.closest("#lesson-list") ||
-      link.id === "previous-lesson" || link.id === "next-lesson";
-    if (!isLessonNav) {
-      return;
-    }
-    var index = lessonIndexOfLink(link);
-    if (index === null) {
-      return; // e.g. "Retour au cours": normal navigation
-    }
-    event.preventDefault();
-    if (index !== currentIndex) {
-      goToLesson(index);
-    }
-  });
-
-  var completeButton = document.getElementById("complete-lesson");
-  if (completeButton) {
-    completeButton.addEventListener("click", toggleCurrentLesson);
-  }
-
-  // Browser back / forward buttons: show the lesson in the address bar.
-  window.addEventListener("popstate", function () {
-    renderLesson(readLessonFromUrl().index);
-  });
-
-  // 5. Start.
-  var fromUrl = readLessonFromUrl();
-  if (!fromUrl.valid) {
-    // Bad identifier: show lesson 1 and fix the address bar without adding history.
-    window.history.replaceState(null, "", "lesson.html?lesson=0");
-  }
-  renderLesson(fromUrl.index);
-})();
+};
