@@ -1,5 +1,5 @@
-// Lesson page: shows the lesson chosen in the URL (?lesson=N, starting at 0)
-// and switches lessons without reloading the page.
+// Lesson page: shows the lesson chosen in the URL (?lesson=N, starting at 0),
+// switches lessons without reloading the page, and tracks lesson progress.
 (function () {
   "use strict";
 
@@ -14,6 +14,10 @@
   }
   var lessons = LEARNIFY_COURSE.lessons;
   var currentIndex = 0;
+
+  // Progress state: one true/false per lesson (true = completed).
+  // This is the single source of truth: every indicator is drawn from it.
+  var completed = lessons.map(function () { return false; });
 
   // 2. Small helpers.
   function setText(id, text) {
@@ -40,6 +44,72 @@
     }
     var index = parseLessonNumber(raw);
     return index === null ? { index: 0, valid: false } : { index: index, valid: true };
+  }
+
+  // 2b. Progress.
+  function countCompleted() {
+    return completed.filter(Boolean).length;
+  }
+
+  function progressMessage(done, total) {
+    if (done === 0) {
+      return "Vous n'avez pas encore commencé. À vous de jouer !";
+    }
+    if (done === total) {
+      return "Bravo, vous avez terminé le cours !";
+    }
+    var remaining = total - done;
+    return "Bon travail ! Encore " + remaining + (remaining > 1 ? " leçons" : " leçon") + " à terminer.";
+  }
+
+  // Redraws every progress indicator from the "completed" list.
+  function renderProgress() {
+    var total = lessons.length;
+    var done = countCompleted();
+    var percent = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    setText("lesson-progress-percent", percent + "%");
+    setText("sidebar-progress-text", done + " sur " + total + " terminées");
+    setText("progress-message", progressMessage(done, total));
+
+    ["lesson-progress-fill", "sidebar-progress-fill"].forEach(function (id) {
+      var fill = document.getElementById(id);
+      if (fill) {
+        fill.style.width = percent + "%";
+        if (fill.parentElement) {
+          fill.parentElement.setAttribute("aria-valuenow", String(percent));
+        }
+      }
+    });
+
+    // Sidebar: status icon and text of each lesson.
+    document.querySelectorAll("#lesson-list .sidebar-lesson").forEach(function (item) {
+      var index = Number(item.getAttribute("data-lesson"));
+      var isDone = completed[index] === true;
+      item.classList.toggle("completed", isDone);
+      var icon = item.querySelector("i");
+      if (icon) {
+        icon.textContent = isDone ? "✓" : "▶";
+      }
+      var small = item.querySelector("small");
+      if (small && lessons[index]) {
+        small.textContent = lessons[index].duration + " min" + (isDone ? " · terminée" : "");
+      }
+    });
+
+    // Button of the current lesson.
+    var button = document.getElementById("complete-lesson");
+    if (button) {
+      var currentDone = completed[currentIndex] === true;
+      button.textContent = currentDone ? "✓ Leçon terminée (annuler)" : "Marquer comme terminée ✓";
+      button.classList.toggle("button-done", currentDone);
+      button.classList.toggle("button-primary", !currentDone);
+    }
+  }
+
+  function toggleCurrentLesson() {
+    completed[currentIndex] = !completed[currentIndex];
+    renderProgress();
   }
 
   // 3. Fill the page with one lesson.
@@ -103,6 +173,8 @@
         item.removeAttribute("aria-current");
       }
     });
+
+    renderProgress();
   }
 
   // 4. Switch lesson without reloading: update the page and the address bar.
@@ -151,6 +223,11 @@
       goToLesson(index);
     }
   });
+
+  var completeButton = document.getElementById("complete-lesson");
+  if (completeButton) {
+    completeButton.addEventListener("click", toggleCurrentLesson);
+  }
 
   // Browser back / forward buttons: show the lesson in the address bar.
   window.addEventListener("popstate", function () {
