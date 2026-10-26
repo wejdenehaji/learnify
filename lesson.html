@@ -3,37 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Suivez une leçon de développement web sur Learnify.">
+  <meta name="description" content="Suivez une leçon sur Learnify.">
   <title>Leçon — Learnify</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="site-header"><div class="container nav-wrap">
     <a class="brand" href="index.html"><span class="brand-mark">L</span>learnify<span class="brand-dot">.</span></a>
-    <nav class="main-nav" aria-label="Navigation principale"><a href="index.html">Accueil</a><a class="active" href="course.html">Cours</a><a href="index.html#about">À propos</a><a href="index.html#contact">Contact</a><a href="admin.html" class="admin-nav-button">⚙️ Administration</a></nav>
-    <a class="nav-cta" href="course.html">Le cours <span>↗</span></a>
+    <nav class="main-nav" aria-label="Navigation principale"><a href="index.html">Accueil</a><a href="index.html#courses">Cours</a><a href="index.html#about">À propos</a><a href="index.html#contact">Contact</a><a href="admin.html" class="admin-nav-button">⚙️ Administration</a></nav>
+    <a class="nav-cta" href="index.html#courses">Explorer les cours <span>↗</span></a>
   </div></header>
   <main class="container page-main lesson-page">
-    <div class="breadcrumbs"><a href="index.html">Accueil</a><span>/</span><a href="course.html">HTML & CSS</a><span>/</span><span id="breadcrumb-lesson">Leçon 1</span></div>
-    <div class="lesson-page-heading"><div><span class="eyebrow">HTML & CSS FUNDAMENTALS</span><h1 id="lesson-title">Bienvenue dans le développement web</h1><p id="lesson-subtitle">Leçon 1 sur 5 · Introduction</p></div><div class="lesson-progress-small"><span>Progression du cours</span><strong id="lesson-progress-percent">0%</strong><div class="progress-track"><span id="lesson-progress-fill"></span></div></div></div>
+    <div class="breadcrumbs"><a href="index.html">Accueil</a><span>/</span><a id="breadcrumb-course" href="course.html">Cours</a><span>/</span><span id="breadcrumb-lesson">Leçon</span></div>
+    <div class="lesson-page-heading">
+      <div><span class="eyebrow" id="lesson-eyebrow"></span><h1 id="lesson-title"></h1><p id="lesson-subtitle"></p></div>
+      <div class="lesson-progress-small"><span>Progression du cours</span><strong id="lesson-progress-percent">0%</strong><div class="progress-track"><span id="lesson-progress-fill" role="progressbar" aria-label="Progression du cours" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></span></div></div>
+    </div>
     <div class="lesson-layout">
       <article class="lesson-content">
-        <div class="video-frame"><iframe id="lesson-video" src="https://www.youtube-nocookie.com/embed/UB1O30fR-EE" title="Vidéo de présentation du HTML" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
-        <div class="lesson-article"><div class="eyebrow">LEÇON EN BREF</div><h2 id="article-heading">Qu'est-ce que le développement web ?</h2><p id="lesson-description">Le développement web consiste à créer des sites et des applications accessibles depuis un navigateur. Pour commencer, on utilise principalement HTML pour organiser le contenu et CSS pour définir son apparence.</p><div class="tip-box"><span>✦</span><p><strong>À retenir</strong><br><span id="lesson-tip">HTML donne une structure au contenu, tandis que CSS s'occupe de la présentation visuelle.</span></p></div><h3>Un petit exemple</h3><p>Voici un exemple de structure HTML. Le navigateur lit ces éléments et affiche un titre suivi d'un paragraphe.</p><pre class="code-example"><code id="lesson-code">&lt;h1&gt;Bonjour !&lt;/h1&gt;
-&lt;p&gt;Bienvenue sur ma page web.&lt;/p&gt;</code></pre><p>Essayez de repérer le titre et le paragraphe. Dans les prochaines leçons, nous verrons comment ajouter des styles et organiser les éléments.</p></div>
-        <div class="lesson-actions"><a href="course.html" class="button button-outline">← Plan du cours</a><button id="complete-lesson" class="button button-primary">Marquer comme terminée ✓</button></div>
-        <div class="lesson-nav"><a id="previous-lesson" href="lesson.html?lesson=0">← Leçon précédente</a><a id="next-lesson" href="lesson.html?lesson=1">Leçon suivante →</a></div>
+        <div class="video-frame"><iframe id="lesson-video" title="Vidéo de la leçon" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
+        <div id="video-markers"></div>
+        <div class="lesson-article">
+          <div class="eyebrow">LEÇON EN BREF</div>
+          <h2 id="article-heading"></h2>
+          <p id="lesson-description"></p>
+          <div class="tip-box"><span>✦</span><p><strong>À retenir</strong><br><span id="lesson-tip"></span></p></div>
+          <h3>Un petit exemple</h3>
+          <pre class="code-example"><code id="lesson-code"></code></pre>
+        </div>
+        <div id="quiz"></div>
+        <div class="lesson-actions"><a href="course.html" id="back-course" class="button button-outline">← Plan du cours</a><button type="button" id="complete-lesson" class="button button-primary">Marquer comme terminée ✓</button></div>
+        <div class="lesson-nav"><a id="previous-lesson" href="lesson.html">← Leçon précédente</a><a id="next-lesson" href="lesson.html">Leçon suivante →</a></div>
       </article>
-      <aside class="lesson-sidebar"><div class="sidebar-heading"><div><span class="eyebrow">VOTRE PARCOURS</span><h2>Les leçons</h2></div><span class="lesson-count">5</span></div><div class="sidebar-progress"><div class="progress-track"><span id="sidebar-progress-fill"></span></div><small id="sidebar-progress-text">0 sur 5 terminées</small></div><div id="lesson-list" class="sidebar-lesson-list">
-        <a href="lesson.html?lesson=0" data-lesson="0" class="sidebar-lesson active"><span class="sidebar-lesson-number">01</span><span><strong>Bienvenue dans le développement web</strong><small>6 min</small></span><i>▶</i></a>
-        <a href="lesson.html?lesson=1" data-lesson="1" class="sidebar-lesson"><span class="sidebar-lesson-number">02</span><span><strong>La structure d'une page HTML</strong><small>10 min</small></span><i>▶</i></a>
-        <a href="lesson.html?lesson=2" data-lesson="2" class="sidebar-lesson"><span class="sidebar-lesson-number">03</span><span><strong>Les bases du CSS</strong><small>10 min</small></span><i>▶</i></a>
-        <a href="lesson.html?lesson=3" data-lesson="3" class="sidebar-lesson"><span class="sidebar-lesson-number">04</span><span><strong>Organiser avec Flexbox</strong><small>9 min</small></span><i>▶</i></a>
-        <a href="lesson.html?lesson=4" data-lesson="4" class="sidebar-lesson"><span class="sidebar-lesson-number">05</span><span><strong>Une page adaptée au mobile</strong><small>10 min</small></span><i>▶</i></a>
-      </div><a href="course.html" class="back-link">← Détails du cours</a></aside>
+      <aside class="lesson-sidebar">
+        <div class="sidebar-heading"><div><span class="eyebrow">VOTRE PARCOURS</span><h2>Les leçons</h2></div><span class="lesson-count" id="lesson-count"></span></div>
+        <div class="sidebar-progress"><div class="progress-track"><span id="sidebar-progress-fill" role="progressbar" aria-label="Progression du cours" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></span></div><small id="sidebar-progress-text"></small></div>
+        <div id="lesson-list" class="sidebar-lesson-list"></div>
+      </aside>
     </div>
   </main>
   <footer class="site-footer"><div class="container footer-bottom"><span>© 2026 Learnify — Mini-projet web éducatif</span><div><a href="admin.html" style="margin-right: 15px;">⚙️ Administration</a><a href="index.html">Retour à l'accueil ↑</a></div></div></footer>
