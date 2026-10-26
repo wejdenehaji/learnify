@@ -1,207 +1,108 @@
 /**
- * Learnify - Quiz Engine (Vanilla JS)
- * Module de quiz interactif avec validation immédiate, explications pédagogiques,
- * calcul du score et persistance locale.
+ * Learnify - Quiz avec validation immédiate
+ * 1. L'étudiant choisit une réponse par question.
+ * 2. "Vérifier" : si une question est sans réponse, on le signale et on ne note rien.
+ * 3. Sinon : couleur verte/rouge + explication, score affiché et sauvegardé.
+ * 4. Score >= la moitié des questions : la leçon est marquée terminée.
  */
 
-import { Storage } from './storage.js';
+import * as Store from './storage.js';
+import { esc } from './utils.js';
 
-export const QuizEngine = {
-  /**
-   * Initialise et affiche le quiz de la leçon
-   * @param {HTMLElement} container Élément DOM récepteur
-   * @param {Object} course Objet cours
-   * @param {Object} lesson Objet leçon
-   * @param {Function} onCompleted Callback optionnel en cas de succès
-   */
-  render(container, course, lesson, onCompleted) {
-    if (!container) return;
+export function showQuiz(box, course, lessonIndex, onPass) {
+  const questions = course.lessons[lessonIndex].quiz || [];
+  if (questions.length === 0) { box.innerHTML = ''; return; }
 
-    if (!lesson.quiz || lesson.quiz.length === 0) {
-      container.innerHTML = '';
+  const best = Store.getScore(course.id, lessonIndex);
+
+  box.innerHTML = `
+    <section class="lesson-quiz-section" aria-labelledby="quiz-heading">
+      <div class="quiz-header">
+        <div>
+          <span class="eyebrow">AUTO-ÉVALUATION</span>
+          <h2 id="quiz-heading">Quiz de la leçon</h2>
+          <p>Répondez à toutes les questions puis vérifiez vos réponses.</p>
+        </div>
+        <div class="quiz-badge">${best ? `Meilleur score : <strong>${best.score} / ${best.total}</strong>` : 'Non validé'}</div>
+      </div>
+      <form novalidate>
+        <div class="quiz-questions-list">
+          ${questions.map((q, i) => `
+            <fieldset class="quiz-card">
+              <legend class="quiz-question-title"><span class="question-number">Question ${i + 1}</span><strong>${esc(q.question)}</strong></legend>
+              <div class="quiz-options">
+                ${q.options.map((opt, j) => `
+                  <label class="quiz-option-label"><input type="radio" name="q${i}" value="${j}"><span class="opt-text">${esc(opt)}</span></label>`).join('')}
+              </div>
+              <div class="quiz-feedback" aria-live="polite" hidden></div>
+            </fieldset>`).join('')}
+        </div>
+        <div class="quiz-actions">
+          <button type="submit" class="button button-primary">Vérifier mes réponses <span>✓</span></button>
+          <button type="button" class="button button-outline" id="quiz-retry" hidden>Recommencer le quiz ↺</button>
+        </div>
+        <div class="quiz-result-banner" role="alert" hidden></div>
+      </form>
+    </section>`;
+
+  const form = box.querySelector('form');
+  const cards = [...form.querySelectorAll('.quiz-card')];
+  const banner = form.querySelector('.quiz-result-banner');
+  const submitBtn = form.querySelector('[type="submit"]');
+  const retryBtn = form.querySelector('#quiz-retry');
+
+  function feedback(card, type, html) {
+    const el = card.querySelector('.quiz-feedback');
+    el.className = `quiz-feedback feedback-${type}`;
+    el.innerHTML = html;
+    el.hidden = false;
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const picked = questions.map((_, i) => form.querySelector(`input[name="q${i}"]:checked`));
+
+    // Une question sans réponse : on prévient et on ne calcule aucun score
+    if (picked.includes(null)) {
+      picked.forEach((p, i) => {
+        if (p) cards[i].querySelector('.quiz-feedback').hidden = true;
+        else feedback(cards[i], 'warning', 'Choisissez une réponse pour cette question.');
+      });
       return;
     }
 
-    const previousScore = Storage.getQuizScore(course.id, lesson.id);
-
-    container.innerHTML = `
-      <section class="lesson-quiz-section" aria-labelledby="quiz-heading">
-        <div class="quiz-header">
-          <div>
-            <span class="eyebrow">AUTO-ÉVALUATION</span>
-            <h2 id="quiz-heading">Quiz express de validation</h2>
-            <p>Testez votre compréhension de cette leçon avant de passer à la suite.</p>
-          </div>
-          <div class="quiz-badge" id="quiz-badge">
-            ${previousScore ? `<span>Dernier score : <strong>${previousScore.score} / ${previousScore.total}</strong></span>` : '<span>Non validé</span>'}
-          </div>
-        </div>
-
-        <form class="quiz-form" id="quiz-form" novalidate>
-          <div class="quiz-questions-list">
-            ${lesson.quiz.map((q, qIndex) => `
-              <fieldset class="quiz-card" data-qid="${q.id}" data-correct="${q.correctIndex}">
-                <legend class="quiz-question-title">
-                  <span class="question-number">Question ${qIndex + 1}</span>
-                  <strong>${q.question}</strong>
-                </legend>
-                <div class="quiz-options" role="radiogroup">
-                  ${q.options.map((opt, optIndex) => `
-                    <label class="quiz-option-label" for="q_${q.id}_opt_${optIndex}">
-                      <input type="radio" id="q_${q.id}_opt_${optIndex}" name="question_${q.id}" value="${optIndex}">
-                      <span class="opt-bullet"></span>
-                      <span class="opt-text">${opt}</span>
-                    </label>
-                  `).join('')}
-                </div>
-                <div class="quiz-feedback" aria-live="polite" style="display: none;"></div>
-              </fieldset>
-            `).join('')}
-          </div>
-
-          <div class="quiz-actions">
-            <button type="submit" class="button button-primary" id="btn-validate-quiz">
-              Vérifier mes réponses <span>✓</span>
-            </button>
-            <button type="button" class="button button-outline" id="btn-reset-quiz" style="display: none;">
-              Recommencer le quiz ↺
-            </button>
-          </div>
-
-          <div class="quiz-result-banner" id="quiz-result-banner" style="display: none;" role="alert"></div>
-        </form>
-      </section>
-    `;
-
-    const form = container.querySelector('#quiz-form');
-    const resetBtn = container.querySelector('#btn-reset-quiz');
-    const validateBtn = container.querySelector('#btn-validate-quiz');
-    const resultBanner = container.querySelector('#quiz-result-banner');
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      this.evaluate(container, course, lesson, onCompleted);
-    });
-
-    if (resetBtn) {
-      resetBtn.addEventListener('click', () => {
-        form.reset();
-        const fieldsets = container.querySelectorAll('.quiz-card');
-        fieldsets.forEach(f => {
-          f.classList.remove('answered-correct', 'answered-wrong');
-          const fb = f.querySelector('.quiz-feedback');
-          if (fb) {
-            fb.style.display = 'none';
-            fb.textContent = '';
-          }
-          const inputs = f.querySelectorAll('input[type="radio"]');
-          inputs.forEach(inp => inp.disabled = false);
-        });
-        resultBanner.style.display = 'none';
-        resetBtn.style.display = 'none';
-        validateBtn.style.display = 'inline-flex';
-      });
-    }
-  },
-
-  /**
-   * Évalue les réponses et produit un feedback immédiat
-   */
-  evaluate(container, course, lesson, onCompleted) {
-    const questions = lesson.quiz;
     let score = 0;
-    let allAnswered = true;
-
-    questions.forEach((q) => {
-      const fieldset = container.querySelector(`fieldset[data-qid="${q.id}"]`);
-      if (!fieldset) return;
-
-      const checked = fieldset.querySelector(`input[name="question_${q.id}"]:checked`);
-      const feedbackEl = fieldset.querySelector('.quiz-feedback');
-
-      if (!checked) {
-        allAnswered = false;
-        fieldset.classList.add('answered-wrong');
-        if (feedbackEl) {
-          feedbackEl.style.display = 'block';
-          feedbackEl.className = 'quiz-feedback feedback-warning';
-          feedbackEl.textContent = 'Veuillez sélectionner une réponse pour cette question.';
-        }
-        return;
-      }
-
-      const selectedIndex = Number(checked.value);
-      const isCorrect = selectedIndex === q.correctIndex;
-
-      // Désactiver les options après évaluation
-      const inputs = fieldset.querySelectorAll('input[type="radio"]');
-      inputs.forEach(inp => inp.disabled = true);
-
-      fieldset.classList.remove('answered-correct', 'answered-wrong');
-      if (isCorrect) {
-        score++;
-        fieldset.classList.add('answered-correct');
-        if (feedbackEl) {
-          feedbackEl.style.display = 'block';
-          feedbackEl.className = 'quiz-feedback feedback-success';
-          feedbackEl.innerHTML = `<strong>✓ Bonne réponse !</strong> ${q.explanation}`;
-        }
-      } else {
-        fieldset.classList.add('answered-wrong');
-        if (feedbackEl) {
-          feedbackEl.style.display = 'block';
-          feedbackEl.className = 'quiz-feedback feedback-error';
-          feedbackEl.innerHTML = `<strong>✗ Réponse incorrecte.</strong> ${q.explanation}`;
-        }
-      }
+    questions.forEach((q, i) => {
+      const correct = Number(picked[i].value) === q.correctIndex;
+      if (correct) score++;
+      cards[i].classList.add(correct ? 'answered-correct' : 'answered-wrong');
+      cards[i].querySelectorAll('input').forEach((input) => { input.disabled = true; });
+      feedback(cards[i], correct ? 'success' : 'error', correct
+        ? `<strong>✓ Bonne réponse !</strong> ${esc(q.explanation)}`
+        : `<strong>✗ Incorrect.</strong> Bonne réponse : ${esc(q.options[q.correctIndex])}. ${esc(q.explanation)}`);
     });
 
-    if (!allAnswered) return;
+    Store.saveScore(course.id, lessonIndex, score, questions.length);
+    const passed = score >= Math.ceil(questions.length / 2);
 
-    // Sauvegarder le score
-    Storage.saveQuizScore(course.id, lesson.id, score, questions.length);
+    banner.className = `quiz-result-banner ${passed ? 'banner-success' : 'banner-warning'}`;
+    banner.innerHTML = `<div class="result-icon">${passed ? '🏆' : '💡'}</div><div class="result-text"><strong>Score : ${score} / ${questions.length}</strong><p>${passed ? 'Quiz réussi : la leçon est marquée comme terminée.' : 'Relisez la leçon puis recommencez le quiz.'}</p></div>`;
+    banner.hidden = false;
+    submitBtn.hidden = true;
+    retryBtn.hidden = false;
 
-    // Mettre à jour l'en-tête du badge
-    const badge = container.querySelector('#quiz-badge');
-    if (badge) {
-      badge.innerHTML = `<span>Score obtenu : <strong>${score} / ${questions.length}</strong></span>`;
-    }
+    if (passed) { Store.setDone(course.id, lessonIndex, true); onPass(); }
+  });
 
-    // Afficher la bannière de synthèse
-    const banner = container.querySelector('#quiz-result-banner');
-    const validateBtn = container.querySelector('#btn-validate-quiz');
-    const resetBtn = container.querySelector('#btn-reset-quiz');
-
-    if (banner) {
-      const isPerfect = score === questions.length;
-      const isPassed = score >= Math.ceil(questions.length / 2);
-
-      banner.style.display = 'block';
-      if (isPassed) {
-        banner.className = 'quiz-result-banner banner-success';
-        banner.innerHTML = `
-          <div class="result-icon">🏆</div>
-          <div class="result-text">
-            <strong>Félicitations ! Vous avez validé ce quiz (${score}/${questions.length}).</strong>
-            <p>La leçon a été automatiquement marquée comme terminée dans votre suivi de progression.</p>
-          </div>
-        `;
-        // Marquer la leçon comme terminée automatiquement
-        Storage.setLessonCompleted(course.id, lesson.id, true);
-        if (onCompleted) onCompleted();
-      } else {
-        banner.className = 'quiz-result-banner banner-warning';
-        banner.innerHTML = `
-          <div class="result-icon">💡</div>
-          <div class="result-text">
-            <strong>Score : ${score} / ${questions.length}.</strong>
-            <p>Prenez le temps de relire la leçon et retentez le quiz pour perfectionner vos connaissances.</p>
-          </div>
-        `;
-      }
-    }
-
-    if (validateBtn) validateBtn.style.display = 'none';
-    if (resetBtn) resetBtn.style.display = 'inline-flex';
-  }
-};
+  retryBtn.addEventListener('click', () => {
+    form.reset();
+    cards.forEach((card) => {
+      card.classList.remove('answered-correct', 'answered-wrong');
+      card.querySelector('.quiz-feedback').hidden = true;
+      card.querySelectorAll('input').forEach((input) => { input.disabled = false; });
+    });
+    banner.hidden = true;
+    retryBtn.hidden = true;
+    submitBtn.hidden = false;
+  });
+}
