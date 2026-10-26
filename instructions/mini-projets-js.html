@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini-projets JavaScript : cahier des charges - ISSAT Sousse</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/web.css">
+    <link rel="stylesheet" href="css/projets.css">
+    <link rel="stylesheet" href="css/mini-js.css">
+</head>
+<body>
+    <div class="progress" id="progress" aria-hidden="true"></div>
+    <header>
+        <div class="hero">
+            <div>
+                <span class="eyebrow">Mini-projets · FIA2 · Partie JavaScript</span>
+                <h1>Cahier des charges </h1>
+                <p>Pour chaque sujet : un socle de fonctionnalités obligatoires, des bonus au choix et des règles communes pour que tous les projets demandent un travail comparable.</p>
+                <div class="chips"><span>8 sujets</span><span>Socle obligatoire + bonus</span><span>Bonus</span></div>
+                <p class="bilan"><b id="bilan-rendu">0</b> / <span id="total-rendu">0</span> points de la checklist de rendu cochés</p>
+                <div class="hero-actions">
+                    <a class="btn-fascicule" href="mini-projets.html">← Retour aux mini-projets</a>
+                    <button class="theme-toggle" id="theme-toggle" type="button">Changer de thème</button>
+                </div>
+            </div>
+            <pre class="code-peek" aria-hidden="true"><span class="c">// Le socle de chaque sujet</span>
+<span class="k">const</span> sujet = {
+  <span class="f">obligatoires</span>: <span class="s">"3 ou 4"</span>,
+  <span class="f">bonus</span>: <span class="s">"au choix"</span>,
+  <span class="f">note</span>: <span class="s">"/ 20"</span>
+};</pre>
+        </div>
+    </header>
+
+    <main>
+        <div class="layout">
+            <nav class="toc" aria-label="Sommaire">
+                <a href="#regles">Règles communes</a>
+                <a href="#sujets">Fonctionnalités par sujet</a>
+                <a href="#evaluation">Grille d'évaluation</a>
+                <a href="#rendu">Avant de rendre</a>
+                <a href="mini-projets.html" class="toc-back">← Liste des mini-projets</a>
+            </nav>
+            <div class="notions">
+                <section class="card notion" id="regles">
+                    <h2>Règles communes</h2>
+                    <p>Ces règles s'appliquent à tous les sujets de la partie JavaScript.</p>
+                    <div class="regles"><div class="regle"><span class="icone">👥</span><strong>Un binôme</strong><p>Le projet est réalisé par deux étudiants, comme le prévoit le modèle de rapport (étudiant 1 et étudiant 2). Chacun doit contribuer au code.</p></div><div class="regle"><span class="icone">🔗</span><strong>Même sujet que la partie HTML/CSS</strong><p>La partie JavaScript enrichit la page HTML/CSS du même sujet : vous ne repartez pas de zéro. Le sujet 4 n'a pas de fiche JavaScript.</p></div><div class="regle"><span class="icone">📦</span><strong>Bibliothèques</strong><p>JavaScript « vanilla » par défaut. Exceptions : Chart.js (ou équivalent) pour le sujet 3 ; pour le PDF du sujet 5, <code>window.print()</code> avec la feuille <code>@media print</code> ou une bibliothèque. Toute bibliothèque est citée dans le rapport.</p></div><div class="regle"><span class="icone">🗂️</span><strong>Données</strong><p>Les données sont fictives : un tableau JavaScript ou un fichier JSON local lu avec <code>fetch</code>. L'« actualisation automatique » est simulée avec <code>setInterval</code>. <code>localStorage</code> assure la persistance.</p></div><div class="regle"><span class="icone">✅</span><strong>Qualité minimale</strong><p>HTML5 sémantique, responsive (mobile, tablette, desktop), validation W3C, aucune erreur dans la console, labels et focus visible, respect de <code>prefers-reduced-motion</code>.</p></div><div class="regle"><span class="icone">🐙</span><strong>Dépôt GitHub</strong><p>Le code est déposé sur GitHub avec des commits réguliers des deux étudiants et un fichier README. Un serveur local (Live Server) est nécessaire pour <code>fetch</code> et les modules.</p></div></div>
+                </section>
+
+                <section class="card notion" id="sujets">
+                    <h2>Fonctionnalités par sujet</h2>
+                    <p>Chaque sujet comporte un <b>socle de fonctionnalités obligatoires</b> et des <b>bonus</b>. Les obligatoires sont notées dans le barème ; les bonus ajoutent des points, dans la limite de 20. Le sujet 3 étant plus court, des bonus sont suggérés pour équilibrer la charge de travail.</p>
+                    <div class="legende"><span class="l-oblig">✓ Obligatoire</span><span class="l-bonus">★ Bonus</span></div>
+                    <div class="projets">
+                    <article class="card projet" id="m-1">
+                        <h2><span class="num">1</span><span>Page d'accueil d'une startup fictive</span></h2>
+                        <p class="compte">4 obligatoires · 2 bonus</p>
+                        <div><h3 class="sous">Obligatoires</h3><ul class="liste oblig"><li>Menu dynamique (apparition/disparition au scroll)</li><li>Carrousel de témoignages avec transitions fluides</li><li>Validation avancée du formulaire de contact</li><li>Modal pour call-to-action</li></ul></div>
+                        <div><h3 class="sous">Bonus</h3><ul class="liste bonus"><li>Animations au scroll (reveal effects)</li><li>Compteurs animés (stats, clients, etc.)</li></ul></div>
+                        
+                    </article>
+
+                    <article class="card projet" id="m-2">
+                        <h2><span class="num">2</span><span>Blog minimaliste interactif</span></h2>
+                        <p class="compte">4 obligatoires · 3 bonus</p>
+                        <div><h3 class="sous">Obligatoires</h3><ul class="liste oblig"><li>Recherche et filtrage d'articles en temps réel</li><li>Mode clair/sombre persistant (localStorage)</li><li>Système de commentaires interactif (simulation)</li><li>Lecture progressive avec indicateur de scroll</li></ul></div>
+                        <div><h3 class="sous">Bonus</h3><ul class="liste bonus"><li>Bouton « Retour en haut » avec animation</li><li>Navigation fluide entre articles (SPA légère)</li><li>Partage d'articles sur réseaux sociaux (simulation)</li></ul></div>
+                        
+                    </article>
+
+                    <article class="card projet" id="m-3">
+                        <h2><span class="num">3</span><span>Tableau de bord (dashboard)</span></h2>
+                        <p class="compte">3 obligatoires · 2 bonus suggérés</p>
+                        <div><h3 class="sous">Obligatoires</h3><ul class="liste oblig"><li>Tri, filtrage et mise à jour dynamique des tableaux</li><li>Graphiques interactifs (Chart.js ou équivalent)</li><li>Actualisation automatique des données</li></ul></div>
+                        <div><h3 class="sous">Bonus</h3><ul class="liste bonus"><li>Plusieurs types de graphiques <em>(suggestion)</em></li><li>Export CSV des données du tableau <em>(suggestion)</em></li></ul></div>
+                        
+                    </article>
+
+                    <article class="card projet" id="m-5">
+                        <h2><span class="num">5</span><span>CV interactif en ligne</span></h2>
+                        <p class="compte">4 obligatoires · 3 bonus</p>
+                        <div><h3 class="sous">Obligatoires</h3><ul class="liste oblig"><li>Barres de compétences animées au scroll</li><li>Mode clair/sombre avec persistance</li><li>Filtrage des compétences par catégorie</li><li>Export PDF (impression CSS ou bibliothèque, à citer dans le rapport)</li></ul></div>
+                        <div><h3 class="sous">Bonus</h3><ul class="liste bonus"><li>Navigation fluide entre sections (ancres smooth)</li><li>Affichage conditionnel des détails (clic pour plus d'infos)</li><li>Timeline/parcours professionnel interactif</li></ul></div>
+                        
+                    </article>
+
+                    <article class="card projet" id="m-6">
+                        <h2><span class="num">6</span><span>Mini magazine en ligne</span></h2>
+                        <p class="compte">4 obligatoires · 2 bonus</p>
+                        <div><h3 class="sous">Obligatoires</h3><ul class="liste oblig"><li>Navigation dynamique entre pages (fetch local)</li><li>Carrousel d'images</li><li>Validation du formulaire côté client (avant envoi)</li><li>Menu dynamique (apparition/disparition au scroll)</li></ul></div>
+                        <div><h3 class="sous">Bonus</h3><ul class="liste bonus"><li>Simulation de likes ou commentaires</li><li>Témoignages automatiques avec effet de transition</li></ul></div>
+                        
+                    </article>
+
+                    <article class="card projet" id="m-7">
+                        <h2><span class="num">7</span><span>Page de quiz interactif</span></h2>
+                        <p class="compte">4 obligatoires · 4 bonus</p>
+                        <div><h3 class="sous">Obligatoires</h3><ul class="liste oblig"><li>Chronomètre par question avec compte à rebours</li><li>Calcul dynamique du score avec pénalités temporelles</li><li>Feedback immédiat après chaque réponse (bonne/mauvaise)</li><li>Sauvegarde des meilleurs scores (localStorage)</li></ul></div>
+                        <div><h3 class="sous">Bonus</h3><ul class="liste bonus"><li>Système de rejouer avec reset complet</li><li>Gestion de différents types de questions (QCM, Vrai/Faux)</li><li>Barre de progression visuelle</li><li>Animation de transition entre les questions</li></ul></div>
+                        
+                    </article>
+
+                    <article class="card projet" id="m-8">
+                        <h2><span class="num">8</span><span>Plateforme de cours en ligne (mini LMS)</span></h2>
+                        <p class="compte">4 obligatoires · 2 bonus</p>
+                        <div><h3 class="sous">Obligatoires</h3><ul class="liste oblig"><li>Navigation entre cours sans rechargement (SPA simplifiée)</li><li>Suivi de progression dynamique (pourcentage, checklist)</li><li>Sauvegarde automatique de la position dans les cours (localStorage)</li><li>Système de quiz interactif avec validation immédiate</li></ul></div>
+                        <div><h3 class="sous">Bonus</h3><ul class="liste bonus"><li>Lecteur vidéo/cours avec marqueurs de progression</li><li>Interface d'administration simplifiée (ajout/suppression de cours)</li></ul></div>
+                        
+                    </article>
+                    </div>
+                </section>
+
+                
+
+                <section class="card notion" id="rendu">
+                    <h2>Avant de rendre</h2>
+                    <p>Cochez chaque point avant la remise : votre progression est gardée dans votre navigateur.</p>
+                    <ul class="checklist"><li><label><input type="checkbox" data-id="r1"><span>Toutes les fonctionnalités obligatoires fonctionnent</span></label></li><li><label><input type="checkbox" data-id="r2"><span>Aucune erreur dans la console du navigateur (F12)</span></label></li><li><label><input type="checkbox" data-id="r3"><span>Code HTML et CSS validé avec le validateur W3C</span></label></li><li><label><input type="checkbox" data-id="r4"><span>Page testée en mobile, tablette et desktop</span></label></li><li><label><input type="checkbox" data-id="r5"><span>Navigation possible au clavier, avec un focus visible</span></label></li><li><label><input type="checkbox" data-id="r6"><span>Scores Lighthouse relevés (captures dans le rapport)</span></label></li><li><label><input type="checkbox" data-id="r7"><span>Code commenté, fonctions et modules bien nommés</span></label></li><li><label><input type="checkbox" data-id="r8"><span>Rapport rédigé avec le modèle fourni</span></label></li><li><label><input type="checkbox" data-id="r9"><span>Dépôt GitHub à jour, avec les commits des deux étudiants</span></label></li><li><label><input type="checkbox" data-id="r10"><span>Démonstration préparée</span></label></li></ul>
+                    <p class="retenir">À retenir : les livrables sont le code (HTML, CSS et JavaScript séparés), le rapport rédigé avec le modèle fourni et la démonstration. Les commits GitHub de chaque étudiant montrent la contribution de chacun.</p>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <address class="footer-id">
+                <strong>Mr. Sofiene Ben Ahmed</strong>
+                <span>PROFESSEUR PRINCIPAL EMERITE (C.COMMUN)</span>
+                <span>Département Informatique</span>
+                <span>Institut Supérieur des Sciences Appliquées et de Technologie de Sousse (ISSAT Sousse)</span>
+            </address>
+            <ul class="footer-contact">
+                <li><span>E-mail</span><a href="mailto:sofiene.benahmed.issatso@gmail.com">sofiene.benahmed.issatso@gmail.com</a>
+                <a href="mailto:sofaine.benahmed@issatso.u-sousse.tn">sofaine.benahmed@issatso.u-sousse.tn</a>
+                </li>
+                <li><span>Tél</span><a href="tel:+21673382656">+216 73 382 656</a></li>
+            </ul>
+        </div>
+        <p class="footer-copy">ISSAT Sousse · Développement Web · Mini-projets JavaScript FIA2</p>
+    </footer>
+    <script src="js/web.js"></script>
+    <script src="js/mini-js.js"></script>
+</body>
+</html>
