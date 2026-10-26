@@ -263,7 +263,10 @@ h1, h2, h3 { font-family: "Manrope", sans-serif; letter-spacing: -1.2px; }
 .sidebar-lesson.completed > i { color: #279b78; }
 .sidebar-lesson .sidebar-lesson-number { transition: .2s; }
 .lesson-sidebar > .back-link { display: inline-block; margin-top: 17px; }
-
+/* Barres de progression */
+.progress-track { height: 6px; background: var(--line); border-radius: 6px; overflow: hidden; }
+.progress-track span { display: block; width: 0; height: 100%; background: var(--purple); border-radius: 6px; transition: width .3s ease; }
+.progress-message { margin: 9px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
 @media (max-width: 900px) {
   .container { width: min(100% - 36px, 760px); }
   .main-nav { gap: 17px; }
