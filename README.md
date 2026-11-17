@@ -1,67 +1,84 @@
-# Learnify — Mini LMS (Sujet 8)
+# Learnify — LMS full-stack (HTML/CSS/JS + PHP 8 + MySQL)
 
-Mini-projet JavaScript FIA2 — ISSAT Sousse. HTML5, CSS3 et JavaScript « vanilla » (sans bibliothèque).
+Mini-projet ISSAT Sousse. Le frontend « vanilla » existant est conservé (même design, mêmes pages, mêmes modules) ;
+les cours, les comptes et la progression sont maintenant stockés dans **MySQL** via des endpoints **PHP** appelés avec **fetch()**.
 
-## Fonctionnalités
+## 1. Logiciels nécessaires
+- **XAMPP** (Apache + PHP 8.0+ + MySQL/MariaDB) — ou WAMP / MAMP / Laragon.
+- Extensions PHP : `pdo_mysql`, `mbstring`, `json` (activées par défaut dans XAMPP).
+- Un navigateur récent. Une connexion Internet pour les vidéos YouTube.
 
-**Obligatoires**
-1. **Navigation sans rechargement** (`js/router.js`) : les liens internes changent l'URL avec `history.pushState`, puis seul le `<main>` de la page est remplacé. Le bouton Précédent fonctionne (`popstate`).
-2. **Progression dynamique** (`js/progress.js`) : pourcentage = leçons terminées / total. Barres, checklist et bouton « Marquer comme terminée » restent synchronisés.
-3. **Sauvegarde de la position** (`js/storage.js`) : progression, dernière leçon et scores sont dans `localStorage`. La page d'accueil propose « Reprendre ».
-4. **Quiz** (`js/quiz.js`) : une réponse par question, vérification immédiate (vert/rouge + explication), score, possibilité de recommencer. Un quiz réussi (au moins la moitié des points) valide la leçon.
+## 2. Installation
+1. Copiez le dossier `learnify/` dans `C:\xampp\htdocs\` (Linux : `/opt/lampp/htdocs/`, ou `/var/www/html/`).
+2. Lancez **Apache** et **MySQL** dans le panneau XAMPP.
+3. Créez la base : ouvrez `http://localhost/phpmyadmin` → onglet **Importer** → choisissez `database/learnify.sql` → **Exécuter**.
+   (Ou en terminal : `mysql -u root < database/learnify.sql`.) Le script crée la base `learnify`, les tables et les 6 cours d'origine.
+4. Vérifiez la connexion dans `php/config/database.php` (par défaut XAMPP : hôte `127.0.0.1`, utilisateur `root`, mot de passe vide).
+5. Ouvrez **http://localhost/learnify/**.
 
-**Bonus**
-1. **Chapitres vidéo** (`js/player.js`) : un clic recharge la vidéo YouTube à l'instant choisi (on ne mesure pas le temps réellement regardé).
-2. **Administration simplifiée** (`admin.html`, `js/admin.js`) : ajout et suppression de cours.
+> Ne pas ouvrir les `.html` en double-cliquant : il faut passer par `http://localhost/...` (fetch, modules JS et PHP l'exigent).
 
-## Structure
+## 3. Créer un administrateur
+Aucun compte n'est fourni. L'inscription crée toujours un **étudiant** ; le rôle ne vient jamais du navigateur.
+- **Méthode A (terminal)** : `php php/tools/create_admin.php "Votre Nom" admin@exemple.com MotDePasse123`
+  (sous XAMPP Windows : `C:\xampp\php\php.exe php\tools\create_admin.php ...`). Si l'e-mail existe déjà, le compte devient admin.
+- **Méthode B (phpMyAdmin)** : créez un compte via la page *Connexion → Créer un compte*, puis exécutez
+  `UPDATE users SET role='admin' WHERE email='admin@exemple.com';`
 
+Le lien **⚙️ Administration** n'apparaît que pour un administrateur.
+
+## 4. Comment JavaScript et PHP communiquent
 ```
-index.html  course.html  lesson.html  admin.html  style.css
-data/courses.json        6 cours avec leçons, chapitres et quiz
-js/
-  app.js        point d'entrée : choisit la page selon l'URL
-  router.js     navigation sans rechargement
-  data.js       lit courses.json + cours ajoutés - cours supprimés
-  storage.js    tout ce qui touche localStorage
-  progress.js   calcul et affichage de la progression
-  catalogue.js  accueil : cartes + bannière « Reprendre »
-  course.js     page d'un cours
-  lesson.js     page d'une leçon
-  quiz.js       quiz
-  player.js     chapitres vidéo
-  admin.js      ajout / suppression de cours
-  utils.js      $() , esc() (protège le HTML), showMessage()
+navigateur (js/*.js)  --fetch JSON-->  php/<dossier>/<fichier>.php  --PDO-->  MySQL
+        ^                                   |
+        +---- { "success", "message", "data" } ----+
 ```
+- `js/api.js` : unique fonction `api('courses/list.php', {method, body})`. Elle envoie du JSON, ajoute le cookie de session et le jeton
+  **CSRF** (`X-CSRF-Token`) aux requêtes POST, vérifie la réponse JSON et lève une `ApiError` (réseau, JSON invalide, 401, 403, 422...).
+- `php/middleware/bootstrap.php` : inclus par tous les endpoints (réponses JSON uniformes, session sécurisée, CSRF, `require_login()`, `require_admin()`).
+- `js/storage.js` garde son ancienne interface (`getDone`, `isDone`, `setDone`, `getPosition`…) mais lit/écrit désormais en base :
+  `Store.load()` récupère la progression au chargement, `setDone()` etc. appellent `progress/*.php` puis mettent l'écran à jour.
+- `js/data.js` : `getCourses()` / `getCourse()` appellent `courses/list.php` et `courses/get.php`, qui renvoient **le même format que l'ancien `courses.json`** ;
+  c'est pourquoi `catalogue.js`, `course.js`, `lesson.js`, `player.js`, `progress.js` et `router.js` n'ont presque pas changé.
+- `js/auth.js`, `js/login.js`, `login.html` : inscription, connexion, déconnexion, en-tête avec le nom de l'utilisateur.
 
-## Lancer le projet
+Réponse type : `{ "success": true, "message": "Progression enregistrée.", "data": { ... } }` ;
+en cas d'erreur : `{ "success": false, "message": "...", "data": null, "errors": { "champ": "..." } }` avec le code HTTP adapté (401, 403, 404, 405, 409, 422, 500).
 
-`fetch()` et les modules JavaScript ne marchent pas en ouvrant le fichier directement : il faut un serveur local.
-Dans VS Code : clic droit sur `index.html` → **Open with Live Server**.
+## 5. Endpoints PHP
+| Fichier | Méthode | Accès | Rôle |
+|---|---|---|---|
+| `auth/register.php` | POST | public | inscription (étudiant) |
+| `auth/login.php` | POST | public | connexion |
+| `auth/logout.php` | POST | public | déconnexion |
+| `auth/me.php` | GET | public | utilisateur courant + jeton CSRF |
+| `courses/list.php`, `courses/get.php?id=` | GET | public | catalogue / cours complet |
+| `courses/create.php`, `update.php`, `delete.php` | POST | **admin** | gestion des cours |
+| `lessons/create.php`, `update.php`, `delete.php` | POST | **admin** | gestion des leçons |
+| `progress/get.php` | GET | connecté | progression de l'utilisateur connecté (leçons, position, scores, % par cours) |
+| `progress/save.php` | POST | connecté | leçon terminée / non terminée (renvoie le % du cours) |
+| `progress/position.php` | POST | connecté | dernière leçon consultée |
+| `progress/score.php` | POST | connecté | meilleur score de quiz |
+| `progress/reset.php` | POST | connecté | efface **sa propre** progression |
 
-## Données dans localStorage
+## 6. Fonctionnalités
+- Inscription / connexion / déconnexion, `password_hash` / `password_verify`, e-mail unique, validation serveur, `session_regenerate_id` à la connexion.
+- Rôles `student` / `admin` vérifiés **côté serveur** à chaque requête (le rôle est relu en base).
+- Cours et leçons en MySQL ; ajout, modification, suppression (cours et leçons) depuis `admin.html`, avec messages de confirmation et d'erreur.
+- Progression par étudiant en base : leçons terminées, dernière leçon (bannière « Reprendre »), meilleurs scores de quiz, pourcentage calculé.
+- Fonctions d'origine conservées : navigation sans rechargement (`router.js`), quiz avec correction immédiate, chapitres vidéo, barres de progression, design responsive.
+- Sécurité : PDO préparé (`ATTR_EMULATE_PREPARES = false`), CSRF sur tous les POST, cookie de session `HttpOnly` + `SameSite=Lax` (+ `Secure` en HTTPS),
+  échappement `esc()` à l'affichage, erreurs PHP jamais affichées au visiteur, `.htaccess` bloquant l'accès direct à `config/`, `lib/`, `middleware/`, `tools/`.
 
-| Clé | Contenu |
-|---|---|
-| `learnify_progress` | `{ "html-css": [0, 2] }` leçons terminées par cours |
-| `learnify_position` | `{ "courseId": "html-css", "lessonId": 2 }` |
-| `learnify_scores` | `{ "html-css_0": { "score": 2, "total": 2 } }` meilleur score |
-| `learnify_courses` | cours ajoutés dans l'administration |
-| `learnify_deleted` | ids des cours supprimés |
+## 7. Structure
+```
+learnify/
+├── index.html  course.html  lesson.html  admin.html  login.html  style.css
+├── data/courses.json        données d'origine (sert de source au script SQL, plus lu par le site)
+├── database/learnify.sql    schéma + 6 cours
+├── js/   app router data storage progress catalogue course lesson quiz player admin utils  + api auth login
+└── php/  config/ middleware/ lib/ auth/ courses/ lessons/ progress/ tools/
+```
+Base : `users`, `courses`, `lessons`, `progress` (UNIQUE `user_id, lesson_id`), plus `quiz_questions` et `quiz_scores` pour conserver les quiz existants.
+Adaptations du schéma : `courses.slug` = ancien identifiant (`html-css`) utilisé dans les URLs ; `lessons.content` = texte de la leçon ; `lessons.lesson_order` = numéro 0, 1, 2…
 
-Une valeur absente ou illisible est remplacée par une valeur vide, sans erreur.
-
-## Limites connues
-
-- L'administration est une démonstration côté client : les cours ajoutés n'existent que dans ce navigateur et n'ont pas de quiz.
-- Les liens contenant une ancre (`index.html#courses`) rechargent la page normalement.
-- Le fichier `courses.json` n'est pas modifié par l'administration : supprimer un cours du fichier le masque seulement.
-
-## Tests effectués
-
-_À compléter par l'équipe après vos propres tests dans le navigateur (console F12 sans erreur, mobile/tablette/desktop, clavier, validateur W3C)._
-
-## Équipe
-
-- Étudiant 1 : `data.js`, `storage.js`, `progress.js`, `router.js`, `admin.js`
-- Étudiant 2 : `lesson.js`, `course.js`, `quiz.js`, `player.js`, `catalogue.js`
