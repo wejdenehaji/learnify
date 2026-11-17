@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Connexion et inscription à Learnify.">
+  <title>Connexion — Learnify</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header"><div class="container nav-wrap">
+    <a class="brand" href="index.html"><span class="brand-mark">L</span>learnify<span class="brand-dot">.</span></a>
+    <nav class="main-nav" aria-label="Navigation principale"><a href="index.html">Accueil</a><a href="index.html#courses">Cours</a><a href="index.html#about">À propos</a><a href="index.html#contact">Contact</a><a href="admin.html" class="admin-nav-button">⚙️ Administration</a><div class="auth-box" id="auth-box"></div></nav>
+    <a class="nav-cta" href="index.html#courses">Explorer les cours <span>↗</span></a>
+  </div></header>
+  <main class="container page-main">
+    <section class="auth-card">
+      <span class="eyebrow">COMPTE LEARNIFY</span>
+      <h1>Connectez-vous pour suivre votre progression</h1>
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab active" id="tab-login" role="tab">Connexion</button>
+        <button type="button" class="auth-tab" id="tab-register" role="tab">Créer un compte</button>
+      </div>
+      <form id="login-form" class="admin-form" novalidate>
+        <div class="form-group"><label for="login-email">E-mail</label><input type="email" id="login-email" name="email" autocomplete="email" required></div>
+        <div class="form-group"><label for="login-password">Mot de passe</label><input type="password" id="login-password" name="password" autocomplete="current-password" required></div>
+        <button type="submit" class="button button-primary">Se connecter <span>→</span></button>
+      </form>
+      <form id="register-form" class="admin-form" novalidate hidden>
+        <div class="form-group"><label for="reg-name">Nom complet</label><input type="text" id="reg-name" name="name" autocomplete="name" maxlength="100" required></div>
+        <div class="form-group"><label for="reg-email">E-mail</label><input type="email" id="reg-email" name="email" autocomplete="email" required></div>
+        <div class="form-group"><label for="reg-password">Mot de passe (8 caractères minimum)</label><input type="password" id="reg-password" name="password" autocomplete="new-password" minlength="8" maxlength="72" required></div>
+        <button type="submit" class="button button-primary">Créer mon compte <span>+</span></button>
+      </form>
+      <div id="auth-feedback" class="admin-feedback" role="alert" hidden></div>
+    </section>
+  </main>
+  <footer class="site-footer"><div class="container footer-bottom"><span>© 2026 Learnify — Mini-projet web éducatif</span><div><a href="admin.html" style="margin-right: 15px;">⚙️ Administration</a><a href="index.html">Retour à l'accueil ↑</a></div></div></footer>
+  <script type="module" src="js/login.js"></script>
+</body>
+</html>
