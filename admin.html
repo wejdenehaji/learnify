@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Administration simplifiée de Learnify : ajouter et supprimer des cours.">
+  <meta name="description" content="Administration de Learnify : gérer les cours et les leçons.">
   <title>Administration — Learnify</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,34 +13,38 @@
 <body>
   <header class="site-header"><div class="container nav-wrap">
     <a class="brand" href="index.html"><span class="brand-mark">L</span>learnify<span class="brand-dot">.</span></a>
-    <nav class="main-nav" aria-label="Navigation principale"><a href="index.html">Accueil</a><a href="index.html#courses">Cours</a><a href="index.html#about">À propos</a><a href="index.html#contact">Contact</a><a href="admin.html" class="admin-nav-button">⚙️ Administration</a></nav>
+    <nav class="main-nav" aria-label="Navigation principale"><a href="index.html">Accueil</a><a href="index.html#courses">Cours</a><a href="index.html#about">À propos</a><a href="index.html#contact">Contact</a><a href="admin.html" class="admin-nav-button">⚙️ Administration</a><div class="auth-box" id="auth-box"></div></nav>
     <a class="nav-cta" href="index.html#courses">Explorer les cours <span>↗</span></a>
   </div></header>
   <main class="container page-main">
     <section class="admin-page-hero">
       <span class="eyebrow">ADMINISTRATION</span>
-      <h1>Ajouter ou supprimer un cours</h1>
-      <p>Démonstration côté client : les cours ajoutés sont enregistrés dans le localStorage de ce navigateur uniquement.</p>
+      <h1>Gérer les cours et les leçons</h1>
+      <p>Les modifications sont enregistrées dans la base MySQL et visibles immédiatement par tous les étudiants.</p>
     </section>
     <div class="admin-page-layout">
       <section class="content-panel admin-panel-box">
-        <h2>Nouveau cours</h2>
+        <h2 id="form-title">Nouveau cours</h2>
         <form id="admin-form" class="admin-form" novalidate>
           <div class="form-row-2">
-            <div class="form-group"><label for="course-title">Titre *</label><input type="text" id="course-title" required placeholder="Ex : React pour débutants"></div>
+            <div class="form-group"><label for="course-title">Titre *</label><input type="text" id="course-title" required maxlength="150" placeholder="Ex : React pour débutants"></div>
             <div class="form-group"><label for="course-category">Catégorie</label><select id="course-category"><option>Web</option><option>Programmation</option><option>Technologie</option><option>Design</option></select></div>
           </div>
           <div class="form-row-2">
             <div class="form-group"><label for="course-level">Niveau</label><select id="course-level"><option>Débutant</option><option>Intermédiaire</option><option>Avancé</option></select></div>
-            <div class="form-group"><label for="course-instructor">Formateur</label><input type="text" id="course-instructor" placeholder="Ex : Amine Mansour"></div>
+            <div class="form-group"><label for="course-instructor">Formateur</label><input type="text" id="course-instructor" maxlength="100" placeholder="Ex : Amine Mansour"></div>
           </div>
-          <div class="form-group"><label for="course-desc">Description *</label><textarea id="course-desc" rows="2" required></textarea></div>
-          <div class="form-group">
+          <div class="form-group"><label for="course-desc">Description *</label><textarea id="course-desc" rows="2" required maxlength="2000"></textarea></div>
+          <div class="form-group"><label for="course-image">Image (URL, facultatif)</label><input type="url" id="course-image" maxlength="500" placeholder="https://..."></div>
+          <div class="form-group" id="lessons-group">
             <label for="course-lessons">Leçons * (une par ligne)</label>
-            <textarea id="course-lessons" rows="4" required placeholder="Introduction | https://www.youtube.com/watch?v=UB1O30fR-EE&#10;Les composants"></textarea>
-            <span class="form-help">Format : Titre | lien YouTube (le lien est facultatif).</span>
+            <textarea id="course-lessons" rows="4" placeholder="Introduction | https://www.youtube.com/watch?v=UB1O30fR-EE&#10;Les composants"></textarea>
+            <span class="form-help">Format : Titre | lien YouTube (le lien est facultatif). Après création, gérez les leçons avec le bouton 📚.</span>
           </div>
-          <div class="admin-form-actions"><button type="submit" class="button button-primary">Ajouter le cours <span>+</span></button></div>
+          <div class="admin-form-actions">
+            <button type="submit" class="button button-primary" id="course-submit">Ajouter le cours <span>+</span></button>
+            <button type="button" class="button button-outline" id="course-cancel" hidden>Annuler la modification</button>
+          </div>
           <div id="admin-feedback" class="admin-feedback" role="status" hidden></div>
         </form>
       </section>
@@ -53,12 +57,38 @@
           </table>
         </div>
         <div class="admin-danger-zone">
-          <h4>Réinitialisation</h4>
-          <p>Rétablit les cours d'origine et efface la progression enregistrée.</p>
+          <h4>Réinitialiser ma progression</h4>
+          <p>Efface votre propre progression et vos scores de quiz (les cours et les autres étudiants ne sont pas touchés).</p>
           <button type="button" class="button button-outline btn-danger" id="btn-reset">Réinitialiser ↺</button>
         </div>
       </section>
     </div>
+
+    <section class="content-panel admin-panel-box admin-lessons-panel" id="lessons-panel" hidden>
+      <div class="panel-heading"><h2 id="lessons-title">Leçons</h2><button type="button" class="button button-outline" id="lessons-close">Fermer ✕</button></div>
+      <div class="admin-courses-table-wrap">
+        <table class="admin-courses-table">
+          <thead><tr><th>N°</th><th>Leçon</th><th>Durée</th><th>Actions</th></tr></thead>
+          <tbody id="lessons-tbody"></tbody>
+        </table>
+      </div>
+      <h3 id="lesson-form-title">Ajouter une leçon</h3>
+      <form id="lesson-form" class="admin-form" novalidate>
+        <div class="form-row-2">
+          <div class="form-group"><label for="lesson-title-input">Titre *</label><input type="text" id="lesson-title-input" maxlength="150"></div>
+          <div class="form-group"><label for="lesson-duration">Durée</label><input type="text" id="lesson-duration" maxlength="30" placeholder="8 min"></div>
+        </div>
+        <div class="form-group"><label for="lesson-video">Lien YouTube (facultatif)</label><input type="text" id="lesson-video" placeholder="https://www.youtube.com/watch?v=..."></div>
+        <div class="form-group"><label for="lesson-content">Contenu</label><textarea id="lesson-content" rows="3"></textarea></div>
+        <div class="form-group"><label for="lesson-tip">À retenir</label><input type="text" id="lesson-tip" maxlength="500"></div>
+        <div class="form-group"><label for="lesson-code">Exemple de code</label><textarea id="lesson-code" rows="3"></textarea></div>
+        <div class="admin-form-actions">
+          <button type="submit" class="button button-primary" id="lesson-submit">Ajouter la leçon <span>+</span></button>
+          <button type="button" class="button button-outline" id="lesson-cancel" hidden>Annuler la modification</button>
+        </div>
+        <div id="lesson-feedback" class="admin-feedback" role="status" hidden></div>
+      </form>
+    </section>
   </main>
   <footer class="site-footer"><div class="container footer-bottom"><span>© 2026 Learnify — Mini-projet web éducatif</span><div><a href="admin.html" style="margin-right: 15px;">⚙️ Administration</a><a href="index.html">Retour à l'accueil ↑</a></div></div></footer>
   <script type="module" src="js/admin.js"></script>
